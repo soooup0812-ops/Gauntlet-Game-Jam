@@ -1,2 +1,2 @@
 # Gauntlet-Game-Jam
-now
+Raylib included to render windows and graphics
