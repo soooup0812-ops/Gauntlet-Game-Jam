@@ -2,6 +2,7 @@
 
 const float screenWidth = 800.0f;
 const float screenHeight = 900.0f;
+float dt = GetFrameTime();
 
 Hand::Hand() {
     m_position = { 0.0f, 0.0f };
@@ -10,7 +11,7 @@ Hand::Hand() {
     m_chargeTime = 0.0f;
 }
 
-void Hand::update(std::vector<Stone>& allStones) {
+void Hand::update(std::vector<Stone>& allStones, bool canClick) {
     if (isThrowingPhase()) {
         m_position = { screenWidth / 2.0f, screenHeight - 100.0f};
     } else {
@@ -32,9 +33,13 @@ void Hand::update(std::vector<Stone>& allStones) {
         stonesToToss[0]->setPosition(m_position);
     }
 
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !isThrowingPhase()) {
+    if (!canClick) {
+        m_chargeTime = 0.0f;
+    }
+
+    if (canClick && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !isThrowingPhase()) {
         for (Stone& stone : allStones) {
-            if (stone.isOnGround()) {
+            if ((stone.isOnGround() || stone.isTossed()) && !stone.isPickedUp()) { //!isPickedUp() to prevent double click leading to duplicated pointer
                 if (CheckCollisionCircleRec(stone.getPosition(), stone.getRadius(), handCollision)) {
                     pickUpStone(&stone);
                     break;
@@ -43,14 +48,14 @@ void Hand::update(std::vector<Stone>& allStones) {
         }
     }
 
-    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-        m_chargeTime += GetFrameTime();
+    if (canClick && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+        m_chargeTime += dt;
         if (m_chargeTime > 4.0f) {
             m_chargeTime = 4.0f;
         }
     }
 
-    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+    if (canClick && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
         tossStone();
         m_chargeTime = 0.0f;
     }
@@ -75,7 +80,7 @@ void Hand::pickUpStone(Stone* stone) {
 
 void Hand::tossStone() {
     if (!stonesToToss.empty()) {
-        float power = 30.0f + (m_chargeTime * 15.0f);
+        float power = 10.0f + (m_chargeTime * 15.0f);
         Vector2 tossVelocity = { power * 0.4f, -power };
 
         Stone* stoneToToss = stonesToToss[0];

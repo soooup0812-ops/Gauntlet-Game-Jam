@@ -9,7 +9,7 @@ class Hand {
 public:
     Hand();
 
-    void update(std::vector<Stone>& allStones);
+    void update(std::vector<Stone>& allStones, bool canClick);
     void draw();
     void pickUpStone(Stone* stone);
     void tossStone();
