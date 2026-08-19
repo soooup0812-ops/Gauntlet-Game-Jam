@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(Ambatu CXX)
+project(Ambatutoss CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -14,7 +14,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 
 # Create your executable
-add_executable(Ambatu main.cpp Stone.cpp)
+add_executable(Ambatutoss main.cpp Stone.cpp Hand.cpp Variables.cpp)
 
 # Link Raylib to your executable
-target_link_libraries(Ambatu PRIVATE raylib)
+target_link_libraries(Ambatutoss PRIVATE raylib)
