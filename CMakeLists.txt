@@ -14,7 +14,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 
 # Create your executable
-add_executable(Ambatutoss main.cpp Stone.cpp Hand.cpp Modifiers.cpp Game.cpp)
+add_executable(Ambatutoss main.cpp Stone.cpp Hand.cpp Game.cpp)
 
 # Link Raylib to your executable
 target_link_libraries(Ambatutoss PRIVATE raylib)

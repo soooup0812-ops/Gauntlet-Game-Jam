@@ -18,7 +18,7 @@ Hand::~Hand() {
     UnloadTexture(m_clenchTexture);
 }
 
-void Hand::update(std::vector<Stone>& allStones, bool canClick) {
+void Hand::update(std::vector<Stone>& allStones, bool canClick, bool tooStrongActive) {
     float dt = GetFrameTime();
 
     if (isThrowingPhase()) {
@@ -68,12 +68,12 @@ void Hand::update(std::vector<Stone>& allStones, bool canClick) {
     }
 
     if (canClick && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-        tossStone();
+        tossStone(tooStrongActive);
         m_chargeTime = 0.0f;
     }
 }
 
-void Hand::draw() {
+void Hand::draw(bool tooStrongActive) {
     if (m_openTexture.id == 0) {
         m_openTexture = LoadTexture("assets/open.png");
         m_clenchTexture = LoadTexture("assets/clench.png");
@@ -85,7 +85,6 @@ void Hand::draw() {
     Vector2 origin = { m_width / 2.0f, m_height / 2.0f };
 
     DrawTexturePro(currentTexture, source, dest, origin, 0.0f, WHITE);
-    
 }
 
 void Hand::pickUpStone(Stone* stone) {
@@ -95,18 +94,19 @@ void Hand::pickUpStone(Stone* stone) {
     }
 }
 
-void Hand::tossStone() {
+void Hand::tossStone(bool tooStrongActive) {
     if (!stonesToToss.empty()) {
-        float power = 600.0f + (m_chargeTime * 400.0f);
+        float multiplier = tooStrongActive ? 2.5f : 1.0f;
+        float power = 600.0f + (m_chargeTime * 400.0f) * multiplier;
 
         for (Stone* stoneToToss : stonesToToss) {
             float randomDirection = ((static_cast<float>(rand())/RAND_MAX) * 1.6f) - 0.8f; //divide by RAND_MAX to turn whole numbers returned by rand() to float
             Vector2 tossVelocity = { power * randomDirection, -power };
+            stoneToToss->setPickedUp(false);
             stoneToToss -> toss(tossVelocity);
         }
-        
-        stonesToToss.clear();
     }
+    stonesToToss.clear();
 }
 
 void Hand::queueStoneToToss(Stone* stone) {

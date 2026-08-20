@@ -3,12 +3,13 @@
 #include <vector>
 
 #include "raylib.h"
+#include "Modifiers.hpp"
 
 class Stone{
 public:
-    Stone(Vector2 startPosition);
+    Stone(Vector2 startPosition, float radius = 20.0f);
 
-    void update();
+    void update(const GameModifiers& modifiers);
     void draw();
     void toss(Vector2 velocity);
     float getRadius() const { return m_radius; } //getter

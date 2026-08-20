@@ -10,10 +10,10 @@ public:
     Hand();
     ~Hand();
 
-    void update(std::vector<Stone>& allStones, bool canClick);
-    void draw();
+    void update(std::vector<Stone>& allStones, bool canClick, bool tooStrongActive);
+    void draw(bool tooStrongActive);
     void pickUpStone(Stone* stone);
-    void tossStone();
+    void tossStone(bool tooStrongActive);
 
     void queueStoneToToss(Stone* stone);
     bool isThrowingPhase() const;

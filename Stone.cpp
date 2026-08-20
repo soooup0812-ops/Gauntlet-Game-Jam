@@ -3,20 +3,25 @@
 const float screenWidth = 800.0f;
 const float screenHeight = 900.0f;
 
-Stone::Stone(Vector2 startPosition) : m_position(startPosition) {
+Stone::Stone(Vector2 startPosition, float radius) : m_position(startPosition) {
     m_velocity.x = 0.0f;
     m_velocity.y = 0.0f;
-    m_radius = 20.0f;
+    m_radius = radius;
     m_isTossed = false;
     m_isOnGround = true;
     m_isPickedUp = false;
 }
 
-void Stone::update() {
+void Stone::update(const GameModifiers& modifiers) {
     float dt = GetFrameTime();
     if (m_isTossed == true) {
-        const float gravity = 400.0f;
+        const float gravity = modifiers.rainActive ? 700.0f : 400.0f; //if rain active increase gravity
         m_velocity.y += gravity * dt; //move faster going down
+
+        if (modifiers.windActive) {
+            m_velocity.x += 150.0f * dt; 
+        }
+        
         m_position.y += m_velocity.y * dt; //vertical movement
         m_position.x += m_velocity.x * dt; //horizontal movement
     }

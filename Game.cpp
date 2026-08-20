@@ -1,4 +1,6 @@
 #include "Game.hpp"
+
+#include <string>
 #include <cstdlib>
 #include <ctime>
 
@@ -16,7 +18,6 @@ int Game::getTossCount(int round) const {
 
 void Game::run(){
     InitWindow(screenWidth, screenHeight, "Ambatutoss");
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     SetWindowMinSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     SetWindowMaxSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     SetTargetFPS(60);
@@ -37,7 +38,7 @@ void Game::processInput() {
         resetGame();
     } else if (currentState == GAMEOVER && IsKeyPressed(KEY_ENTER)) {
         resetGame();
-    } else if (currentState == GAMEOVER && IsKeyPressed(KEY_ENTER)) {
+    } else if (currentState == GAMEWON && IsKeyPressed(KEY_ENTER)) {
         resetGame();
     }
 }
@@ -55,7 +56,7 @@ void Game::update() {
         if (flashTimer > 0.0f) {
             flashTimer -= dt;
         }
-        
+
         if (modifiers.thunderActive && flashTimer <= 0.0f) {
             if (rand() % 350 == 0) {
                 flashTimer = 0.4f;
@@ -71,18 +72,16 @@ void Game::update() {
 
         bool canClick = !inputLocked;
 
-        hand.update(allStones, canClick);
+        hand.update(allStones, canClick, modifiers.tooStrongActive);
     
         bool allGroundStonesCollected = true;
-        for (const Stone& stone : allStones) {
-            if (stone.isOnGround() && !stone.isPickedUp() && !stone.isTossed()) {
-                allGroundStonesCollected = false;
-                break;
-            }
-        }
 
         for (Stone& stone : allStones) {
-        stone.update();
+            stone.update(modifiers);
+
+            if (stone.isOnGround() && !stone.isPickedUp() && !stone.isTossed()) {
+                allGroundStonesCollected = false;
+            }
 
             if (stone.isTossed() && stone.isOnGround() && !stone.isPickedUp()) { //lose case 1 : a tossed stone was not caught
                 currentState = GAMEOVER;
@@ -138,7 +137,37 @@ void Game::render() {
 
         for (Stone& stone : allStones) { stone.draw(); }
 
-        hand.draw();
+        hand.draw(modifiers.tooStrongActive);
+
+        //modifier effects
+        if (flashTimer > 0.0f) {
+            float alpha = flashTimer / 0.4f; 
+            DrawRectangle(0, 0, static_cast<int>(screenWidth), static_cast<int>(screenHeight), Fade(WHITE, alpha));
+        }
+
+        if (modifiers.rainActive) {
+            for (int i = 0; i < 40; ++i) {
+                float rx = static_cast<float>((i * 37) % static_cast<int>(screenWidth));
+                float ry = static_cast<float>((static_cast<int>(GetTime() * 400 + i * 50)) % static_cast<int>(screenHeight));
+                DrawLineV({rx, ry}, {rx - 2.0f, ry + 15.0f}, Fade(BLUE, 0.3f));
+            }
+        }
+
+        if (modifiers.wifiActive) {
+            int alphaPulse = static_cast<int>(GetTime() * 5) % 2;
+            if (alphaPulse == 0) {
+                DrawText("LAG [Wi-Fi]", screenWidth - 120, 20, 16, RED);
+            }
+        }
+
+        if (modifiers.windActive) {
+            for (int i = 0; i < 6; ++i) {
+            float wx = static_cast<float>((static_cast<int>(GetTime() * 200 + i * 130)) % static_cast<int>(screenWidth));
+            float wy = 100.0f + (i * 100.0f);
+            DrawLineV({wx, wy}, {wx + 40.0f, wy}, Fade(SKYBLUE, 0.4f));
+            }
+        }
+
     }else if (currentState == GAMEOVER) {
         DrawText("Game Over", (screenWidth / 2) - MeasureText("Game Over", 100) / 2, 150, 100, DARKGRAY);
         DrawText("Press [ENTER] to restart", screenWidth / 2 - (MeasureText("Press [ENTER] to restart", 20) / 2 ) - 125, 350, 40, DARKGRAY);
@@ -157,15 +186,17 @@ void Game::resetGame() {
     int tossCount = getTossCount(currentRound);
     allStones.reserve(4 + tossCount);
     inputLocked = true;
+    modifiers.updateModifiersForRound(currentRound);
+    float radius = modifiers.smallerRocksActive ? 10.0f : 20.0f;
 
     for (int i = 0; i < 4; ++i) {
         float spaceBetween = static_cast<float>(screenWidth) / (4 + 1);
-        allStones.emplace_back(Vector2 {spaceBetween * (i + 1), screenHeight - 15.0f});
+        allStones.emplace_back(Vector2 {spaceBetween * (i + 1), screenHeight - 15.0f}, radius);
     }
 
     for (int i = 0; i < tossCount; ++i) {
         float offsetX = (screenWidth / 2.0f) - (120.f / 2.0f) + 20.0f + (i * 40.0f);
-        allStones.emplace_back(Vector2 {offsetX, screenHeight - 100.0f});
+        allStones.emplace_back(Vector2 {offsetX, screenHeight - 100.0f}, radius);
         allStones.back().setPickedUp(true);
         hand.queueStoneToToss(&allStones.back());
     }
@@ -181,17 +212,21 @@ void Game::startNextRound() {
     hand.clearStones();
     allStones.reserve(4 + tossCount);
     inputLocked = true;
+    modifiers.updateModifiersForRound(currentRound);
+    float radius = modifiers.smallerRocksActive ? 10.0f : 20.0f;
 
     for (int i = 0; i < 4; ++i) {
         float spaceBetween = static_cast<float>(screenWidth) / (4 + 1);
-        allStones.emplace_back(Vector2 {spaceBetween * (i + 1), screenHeight - 15.0f});
+        allStones.emplace_back(Vector2 {spaceBetween * (i + 1), screenHeight - 15.0f}, radius);
     }
 
     for (int i = 0; i < tossCount; ++i) {
-        allStones.emplace_back(Vector2 {static_cast<float>(screenWidth / 2), screenHeight - 15.0f});
+        float offsetX = (screenWidth / 2.0f) - (120.f / 2.0f) + 20.0f + (i * 40.0f);
+        allStones.emplace_back(Vector2 {offsetX, screenHeight - 100.0f}, radius);
         allStones.back().setPickedUp(true);
         hand.queueStoneToToss(&allStones.back());
     }
+    
 
     roundStartTimer = 0.5f;
 }
