@@ -8,6 +8,7 @@
 class Hand {
 public:
     Hand();
+    ~Hand();
 
     void update(std::vector<Stone>& allStones, bool canClick);
     void draw();
@@ -25,4 +26,6 @@ private:
     float m_chargeTime;
     float m_width;
     float m_height;
+    Texture2D m_openTexture;
+    Texture2D m_clenchTexture;
 };

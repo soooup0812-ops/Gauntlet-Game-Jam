@@ -1,6 +1,6 @@
 #include "Game.hpp"
-
-float dt = GetFrameTime();
+#include <cstdlib>
+#include <ctime>
 
 Game::Game() {
     currentState = MENU;
@@ -21,6 +21,8 @@ void Game::run(){
     SetWindowMaxSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     SetTargetFPS(60);
 
+    srand(static_cast<unsigned int>(time(nullptr)));
+
     while (!WindowShouldClose()) {
         processInput();
         update();
@@ -33,12 +35,33 @@ void Game::run(){
 void Game::processInput() {
     if (currentState == MENU && IsKeyPressed(KEY_ENTER)) {
         resetGame();
-    } else if (currentState == GAMEOVER && IsKeyPressed(KEY_ENTER))
+    } else if (currentState == GAMEOVER && IsKeyPressed(KEY_ENTER)) {
         resetGame();
+    } else if (currentState == GAMEOVER && IsKeyPressed(KEY_ENTER)) {
+        resetGame();
+    }
 }
 
 void Game::update() {
+    float dt = GetFrameTime();
+
+    if (currentState == PLAYING && modifiers.wifiActive) {
+        SetTargetFPS(30);
+    } else {
+        SetTargetFPS(60);
+    }
+
     if (currentState == PLAYING) {
+        if (flashTimer > 0.0f) {
+            flashTimer -= dt;
+        }
+        
+        if (modifiers.thunderActive && flashTimer <= 0.0f) {
+            if (rand() % 350 == 0) {
+                flashTimer = 0.4f;
+            }
+        }
+
         if (roundStartTimer > 0.0f) {
             roundStartTimer -= dt;
             inputLocked = true;
@@ -82,7 +105,12 @@ void Game::update() {
             }
 
             if (allStonesCollected == true) { //win!
-                startNextRound();
+                
+                if (currentRound >= 7) {
+                    currentState = GAMEWON;
+                } else {
+                    startNextRound();
+                }
             }
         }
     }
@@ -99,12 +127,24 @@ void Game::render() {
         HideCursor();
         DrawText(TextFormat("Round: %d", currentRound), 20, 20, 20, GRAY);
 
+        std::string modText = "Modifiers: ";
+        if (modifiers.rainActive) modText += "[Rain] ";
+        if (modifiers.windActive) modText += "[Wind] ";
+        if (modifiers.thunderActive) modText += "[Thunder] ";
+        if (modifiers.wifiActive) modText += "[Wi-Fi] ";
+        if (modifiers.smallerRocksActive) modText += "[Small Rocks] ";
+        if (modifiers.tooStrongActive) modText += "[Too Strong] ";
+        DrawText(modText.c_str(), 20, 50, 16, DARKBLUE);
+
         for (Stone& stone : allStones) { stone.draw(); }
 
         hand.draw();
     }else if (currentState == GAMEOVER) {
         DrawText("Game Over", (screenWidth / 2) - MeasureText("Game Over", 100) / 2, 150, 100, DARKGRAY);
         DrawText("Press [ENTER] to restart", screenWidth / 2 - (MeasureText("Press [ENTER] to restart", 20) / 2 ) - 125, 350, 40, DARKGRAY);
+    }else if (currentState == GAMEWON) {
+        DrawText("Game Won!", (screenWidth / 2) - MeasureText("Game Over", 100) / 2, 150, 100, GOLD);
+        DrawText("Press [ENTER] to play again", screenWidth / 2 - (MeasureText("Press [ENTER] to play again", 20) / 2 ) - 125, 350, 40, DARKGRAY);
     }
 
     EndDrawing();
@@ -124,7 +164,8 @@ void Game::resetGame() {
     }
 
     for (int i = 0; i < tossCount; ++i) {
-        allStones.emplace_back(Vector2 {static_cast<float>(screenWidth / 2), screenHeight - 15.0f});
+        float offsetX = (screenWidth / 2.0f) - (120.f / 2.0f) + 20.0f + (i * 40.0f);
+        allStones.emplace_back(Vector2 {offsetX, screenHeight - 100.0f});
         allStones.back().setPickedUp(true);
         hand.queueStoneToToss(&allStones.back());
     }

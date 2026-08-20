@@ -2,7 +2,6 @@
 
 const float screenWidth = 800.0f;
 const float screenHeight = 900.0f;
-float dt = GetFrameTime();
 
 Stone::Stone(Vector2 startPosition) : m_position(startPosition) {
     m_velocity.x = 0.0f;
@@ -14,8 +13,9 @@ Stone::Stone(Vector2 startPosition) : m_position(startPosition) {
 }
 
 void Stone::update() {
+    float dt = GetFrameTime();
     if (m_isTossed == true) {
-        const float gravity = 0.1f;
+        const float gravity = 400.0f;
         m_velocity.y += gravity * dt; //move faster going down
         m_position.y += m_velocity.y * dt; //vertical movement
         m_position.x += m_velocity.x * dt; //horizontal movement

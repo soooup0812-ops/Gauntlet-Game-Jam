@@ -5,11 +5,13 @@
 #include "raylib.h"
 #include "Stone.hpp"
 #include "Hand.hpp"
+#include "Modifiers.hpp"
 
 enum GameState {
     MENU,
     PLAYING,
-    GAMEOVER
+    GAMEOVER,
+    GAMEWON
 };
 
 class Game {
@@ -34,5 +36,7 @@ private:
     int currentRound;
     int tossCount;
     float roundStartTimer;
+    float flashTimer = 0.0f;
     bool inputLocked = false;
+    GameModifiers modifiers;
 };

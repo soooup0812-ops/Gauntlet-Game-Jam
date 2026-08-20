@@ -1,17 +1,26 @@
 #include "Hand.hpp"
 
+#include <cstdlib>
+#include <ctime>
+
 const float screenWidth = 800.0f;
 const float screenHeight = 900.0f;
-float dt = GetFrameTime();
 
 Hand::Hand() {
     m_position = { 0.0f, 0.0f };
-    m_height = 40.0f;
+    m_height = 80.0f;
     m_width = 120.0f;
     m_chargeTime = 0.0f;
 }
 
+Hand::~Hand() {
+    UnloadTexture(m_openTexture);
+    UnloadTexture(m_clenchTexture);
+}
+
 void Hand::update(std::vector<Stone>& allStones, bool canClick) {
+    float dt = GetFrameTime();
+
     if (isThrowingPhase()) {
         m_position = { screenWidth / 2.0f, screenHeight - 100.0f};
     } else {
@@ -30,7 +39,10 @@ void Hand::update(std::vector<Stone>& allStones, bool canClick) {
     };
 
     if (!stonesToToss.empty()) {
-        stonesToToss[0]->setPosition(m_position);
+        for (size_t i = 0; i < stonesToToss.size(); ++i) {
+            float offsetX = -((stonesToToss.size() - 1) * 20.0f) + (i * 40.0f);
+            stonesToToss[i]->setPosition({m_position.x + offsetX, m_position.y});
+        }
     }
 
     if (!canClick) {
@@ -62,13 +74,18 @@ void Hand::update(std::vector<Stone>& allStones, bool canClick) {
 }
 
 void Hand::draw() {
-    DrawRectangle(
-        static_cast<int>(m_position.x - m_width/2.0f),
-        static_cast<int>(m_position.y - m_height/2.0f),
-        static_cast<int>(m_width),
-        static_cast<int>(m_height),
-        WHITE
-    );
+    if (m_openTexture.id == 0) {
+        m_openTexture = LoadTexture("assets/open.png");
+        m_clenchTexture = LoadTexture("assets/clench.png");
+    }
+    
+    Texture2D currentTexture = (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || isThrowingPhase()) ? m_clenchTexture : m_openTexture;
+    Rectangle source = { 0.0f, 0.0f, static_cast<float>(currentTexture.width), static_cast<float>(currentTexture.height) };
+    Rectangle dest = { m_position.x, m_position.y, m_width, m_height };
+    Vector2 origin = { m_width / 2.0f, m_height / 2.0f };
+
+    DrawTexturePro(currentTexture, source, dest, origin, 0.0f, WHITE);
+    
 }
 
 void Hand::pickUpStone(Stone* stone) {
@@ -80,12 +97,15 @@ void Hand::pickUpStone(Stone* stone) {
 
 void Hand::tossStone() {
     if (!stonesToToss.empty()) {
-        float power = 10.0f + (m_chargeTime * 15.0f);
-        Vector2 tossVelocity = { power * 0.4f, -power };
+        float power = 600.0f + (m_chargeTime * 400.0f);
 
-        Stone* stoneToToss = stonesToToss[0];
-        stoneToToss -> toss(tossVelocity);
-        stonesToToss.erase(stonesToToss.begin());
+        for (Stone* stoneToToss : stonesToToss) {
+            float randomDirection = ((static_cast<float>(rand())/RAND_MAX) * 1.6f) - 0.8f; //divide by RAND_MAX to turn whole numbers returned by rand() to float
+            Vector2 tossVelocity = { power * randomDirection, -power };
+            stoneToToss -> toss(tossVelocity);
+        }
+        
+        stonesToToss.clear();
     }
 }
 
